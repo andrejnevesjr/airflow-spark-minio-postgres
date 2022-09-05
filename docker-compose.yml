@@ -1,0 +1,156 @@
+version: "3"
+services:
+
+    airflow-webserver:
+        hostname: airflow
+        container_name: airflow
+        image: andrejunior/airflow-spark:latest
+        restart: always
+        networks:
+            - airflow
+        depends_on:
+            - postgres
+            - minio
+            - spark-master
+            - spark-worker
+        environment:   
+            - AIRFLOW__CORE__LOAD_EXAMPLES=False
+            - LOAD_EX=n
+            - EXECUTOR=Local    
+        volumes:
+            - airflow-data:/usr/local/airflow/data
+            - ./airflow/dags:/usr/local/airflow/dags
+            - ./spark/app:/usr/local/spark/app
+            - ./spark/resources:/usr/local/spark/resources         
+        ports:
+            - "8085:8080"
+        command: webserver
+        healthcheck:
+            test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+            interval: 30s
+            timeout: 30s
+            retries: 3
+
+    postgres:
+        hostname: postgres
+        container_name: postgres
+        image: 'postgres:14-bullseye'
+        environment:
+            POSTGRES_USER: 'airflow'
+            POSTGRES_PASSWORD: 'airflow'
+            POSTGRES_DB: 'airflow'
+            PGDATA: /data/postgres
+        volumes:
+            - postgres:/data/postgres
+        ports:
+            - "5432:5432"
+        networks:
+            - airflow
+        restart: on-failure
+        healthcheck:
+            test: ["CMD", "pg_isready"]
+            interval: 60s
+            timeout: 20s
+            retries: 3
+        deploy:
+          resources:
+            limits:
+              memory: 400MB
+
+    minio:
+        hostname: bucket 
+        container_name: bucket
+        image: 'bitnami/minio:latest'
+        environment:
+            MINIO_ROOT_USER: airflow
+            MINIO_ROOT_PASSWORD: airflow
+        ports:
+            - '9000:9000'
+            - '9001:9001'
+        volumes:
+            - minio_data:/data
+        networks:
+            - airflow
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://bucket:9000/minio/health/live"]
+            interval: 60s
+            timeout: 20s
+            retries: 3
+        deploy:
+          resources:
+            limits:
+              memory: 400MB
+
+    createbuckets:
+        image: minio/mc
+        networks:
+            - airflow
+        depends_on:
+            - minio
+        entrypoint: >
+            /bin/sh -c "
+            /usr/bin/mc config host add myminio http://bucket:9000 airflow airflow;
+            /usr/bin/mc rm -r --force myminio/airflow;
+            /usr/bin/mc mb myminio/airflow;
+            /usr/bin/mc policy download myminio/airflow;
+            exit 0;
+            "
+    spark-master:        
+        image: bitnami/spark:3.2.1
+        # https://docs.bitnami.com/tutorials/work-with-non-root-containers/
+        user: root 
+        hostname: spark
+        container_name: spark
+        networks:
+            - airflow
+        environment:
+            - SPARK_MODE=master
+            - SPARK_RPC_AUTHENTICATION_ENABLED=no
+            - SPARK_RPC_ENCRYPTION_ENABLED=no
+            - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+            - SPARK_SSL_ENABLED=no
+        volumes:
+            - ./spark/app:/usr/local/spark/app
+            - ./spark/resources:/usr/local/spark/resources
+        ports:
+            - "8081:8080"
+            - "7077:7077"
+        deploy:
+          resources:
+            limits:
+              memory: 500MB
+
+    spark-worker:
+        image: bitnami/spark:3.2.1
+        user: root
+        hostname: spark-worker
+        container_name: spark-worker
+        networks:
+            - airflow
+        environment:
+            - SPARK_MODE=worker
+            - SPARK_MASTER_URL=spark://spark:7077
+            - SPARK_WORKER_MEMORY=1G
+            - SPARK_WORKER_CORES=1
+            - SPARK_RPC_AUTHENTICATION_ENABLED=no
+            - SPARK_RPC_ENCRYPTION_ENABLED=no
+            - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+            - SPARK_SSL_ENABLED=no
+        volumes:
+            - ./spark/app:/usr/local/spark/app
+            - ./spark/resources:/usr/local/spark/resources
+        depends_on:
+            - spark-master
+        deploy:
+          resources:
+            limits:
+              memory: 1GB
+
+volumes:
+    postgres:
+    airflow-data:
+    minio_data:
+
+networks:
+    airflow:
+        driver: bridge
