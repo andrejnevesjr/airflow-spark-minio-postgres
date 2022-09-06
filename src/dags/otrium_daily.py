@@ -1,12 +1,18 @@
 """
+Otrium - Challenge
+
 Author: André Junior
 Maintaner: André Junior
 Date: 2022-09-05
-Description: Workflow (DAG) to process data provided by URL and copy to MinIO
+Description: Workflow (DAG) to process data provided by Otrium and deliver the proposed challenge.
 Steps:
  - Download data from URL
  - Write out to Airflow temp storage | path => /tmp/data/{year}/{month}/{day}
- - Upload data to AWS S3 (minio) | path =>  airflow/raw/{year}/{month}/{day}
+ - Upload data to AWS S3 (minio) | path =>  otrium/raw/{year}/{month}/{day}
+ - Execute transformations and actions with Spark cluster
+ - Write out to Postgres
+
+ For further information please consider read the file this_challenge.pdf available on docs folder (root).
 
 """
 
@@ -29,7 +35,7 @@ START_DATE = datetime(2018, 8, 20)
 # DAG END DATE
 END_DATE = None
 # Default S3 Bucket
-S3_BUCKET = os.environ.get("S3_BUCKET", "airflow")
+S3_BUCKET = os.environ.get("S3_BUCKET", "otrium")
 # S3 Bucket RAW layer
 S3_RAW_KEY = os.environ.get("S3_KEY", "raw")
 # Variable with path to temporary data storage on Airflow container
@@ -161,7 +167,7 @@ default_args = {
 ###############################################
 
 with models.DAG(
-    "airflow_get_url",
+    "otrium_daily",
     default_args=default_args,
     schedule_interval='@daily',
     catchup=False,

@@ -4,14 +4,13 @@ from airflow.operators.dummy_operator import DummyOperator
 from airflow.contrib.operators.spark_submit_operator import SparkSubmitOperator
 from datetime import datetime, timedelta
 
+
 ###############################################
 # Parameters
 ###############################################
-# S3 CONNECTION ENV VARIABLE
 spark_conn = os.environ.get("spark_conn", "spark_conn")
 spark_master = "spark://spark:7077"
 spark_app_name = "Spark Hello World"
-file_path = "/usr/local/spark/resources/data/airflow.cfg"
 
 ###############################################
 # DAG Definition
@@ -30,7 +29,8 @@ default_args = {
 }
 
 dag = DAG(
-    "spark-test",
+    dag_id="spark-test",
+    description="This DAG runs a simple Pyspark app.",
     default_args=default_args,
     schedule_interval=timedelta(1)
 )
@@ -40,12 +40,12 @@ start = DummyOperator(task_id="start", dag=dag)
 spark_job = SparkSubmitOperator(
     task_id="spark_job",
     # Spark application path created in airflow and spark cluster
-    application="/usr/local/spark/app/hello-world.py",
+    application="/usr/local/spark/applications/hello-world.py",
     name=spark_app_name,
     conn_id=spark_conn,
     verbose=1,
     conf={"spark.master": spark_master},
-    application_args=[file_path],
+    # application_args=[file_path],
     dag=dag)
 
 end = DummyOperator(task_id="end", dag=dag)

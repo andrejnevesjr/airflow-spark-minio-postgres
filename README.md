@@ -6,8 +6,7 @@ This project is currently structured with the following specifications.
 
 | Path | Description |
 | ------ | ------ |
-| airflow | Contains Airflow Dags (Pipelines) |
-| spark| Applications and resources to run our jobs |
+| src | Contains Airflow Dockerfile and all configurations to setup your environment |
 
 <hr>
 
@@ -24,7 +23,7 @@ This project is currently structured with the following specifications.
     * port: 8085 
   
 * **postgres**: Postgres database (Airflow metadata and our pipeline)
-    * image: postgres:13.6
+    * image: postgres:14
     * port: 5432
 
 * **spark-master**: Spark Master
@@ -49,6 +48,8 @@ This project is currently structured with the following specifications.
 
 ### 3. Airflow: Create user for UI
 To access Airflow UI is required to create a new user account, so in our case, we are going to create an fictional user with an Admin role attached.
+
+> **NOTE**: Before **RUN** the command below please confirm that Airflow is up and running, it can be checked by accessing the URL [http://localhost:8085](http://localhost:8085). Have in mind that in the first execution it may take 2 to 3 minutes :stuck_out_tongue_winking_eye:
 
     $ docker-compose run airflow-webserver airflow users create --role Admin --username airflow \
       --email airflow@example.com --firstname airflow --lastname airflow --password airflow
