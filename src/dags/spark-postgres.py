@@ -13,9 +13,9 @@ postgres_driver_jar = "/usr/local/spark/assets/jars/postgresql-42.2.6.jar"
 
 movies_file = "/usr/local/spark/assets/data/movies.csv"
 ratings_file = "/usr/local/spark/assets/data/ratings.csv"
-postgres_db = "jdbc:postgresql://postgres:5432/otrium"
-postgres_user = "candidate"
-postgres_pwd = "Otrium#Pass#2022"
+postgres_db = "jdbc:postgresql://postgres:5432/airflow"
+postgres_user = "airflow"
+postgres_pwd = "airflow"
 
 ###############################################
 # DAG Definition
