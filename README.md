@@ -64,7 +64,11 @@ This challenge is currently structured with the following specifications.
 
 * **spark-worker**: Spark workers
     * image: bitnami/spark:3.2.1
-  
+
+*  **MinIO**: Object storage
+
+   - image: bitnami/minio:latest
+    
 ## Step-by-Step
 
 ### 1. Clone the Repository
